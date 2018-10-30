@@ -13,7 +13,7 @@ namespace rosbzz_node
 const string roscontroller::CAPTURE_SRV_DEFAULT_NAME = "/image_sender/capture_image";
 const bool debug = false;
 
-roscontroller::roscontroller(ros::NodeHandle& n_c, ros::NodeHandle& n_c_priv)
+roscontroller::roscontroller(ros::NodeHandle &n_c, ros::NodeHandle &n_c_priv)
 /*
 / roscontroller class Constructor
 ---------------*/
@@ -173,7 +173,7 @@ void roscontroller::RosControllerRun()
   }
 }
 
-void roscontroller::Rosparameters_get(ros::NodeHandle& n_c)
+void roscontroller::Rosparameters_get(ros::NodeHandle &n_c)
 /*
 / Get all required parameters from the ROS launch file
 /-------------------------------------------------------*/
@@ -242,7 +242,7 @@ void roscontroller::Rosparameters_get(ros::NodeHandle& n_c)
   GetSubscriptionParameters(n_c);
 }
 
-void roscontroller::GetSubscriptionParameters(ros::NodeHandle& node_handle)
+void roscontroller::GetSubscriptionParameters(ros::NodeHandle &node_handle)
 /*
 /Obtains publisher, subscriber and services from yml config file
 /-----------------------------------------------------------------------------------*/
@@ -319,7 +319,7 @@ void roscontroller::GetSubscriptionParameters(ros::NodeHandle& node_handle)
   node_handle.getParam("obstacles", obstacles_topic);
 }
 
-void roscontroller::Initialize_pub_sub(ros::NodeHandle& n_c)
+void roscontroller::Initialize_pub_sub(ros::NodeHandle &n_c)
 /*
 / Create all required subscribers, publishers and ROS service clients
 /-------------------------------------------------------*/
@@ -355,7 +355,7 @@ void roscontroller::Initialize_pub_sub(ros::NodeHandle& n_c)
   multi_msg = true;
 }
 
-void roscontroller::Subscribe(ros::NodeHandle& n_c)
+void roscontroller::Subscribe(ros::NodeHandle &n_c)
 /*
 / Robot independent subscribers
 /--------------------------------------*/
@@ -424,7 +424,7 @@ void roscontroller::neighbours_pos_publisher()
     sensor_msgs::NavSatFix neigh_tmp;
     neigh_tmp.header.stamp = current_time;
     neigh_tmp.header.frame_id = "/world";
-    neigh_tmp.position_covariance_type = it->first;  // custom robot id storage
+    neigh_tmp.position_covariance_type = it->first; // custom robot id storage
     neigh_tmp.latitude = (it->second).x;
     neigh_tmp.longitude = (it->second).y;
     neigh_tmp.altitude = (it->second).z;
@@ -482,7 +482,7 @@ with size.........  |   /
 /----------------------------------------------------------------------------------------------------*/
 {
   // get the payload to be sent
-  uint64_t* payload_out_ptr = buzz_utility::obt_out_msg();
+  uint64_t *payload_out_ptr = buzz_utility::obt_out_msg();
   uint64_t position[3];
   // Appened current position to message
   double tmp[3];
@@ -496,7 +496,7 @@ with size.........  |   /
   payload_out.payload64.push_back(position[1]);
   payload_out.payload64.push_back(position[2]);
   //  Append Buzz message
-  uint16_t* out = buzz_utility::u64_cvt_u16(payload_out_ptr[0]);
+  uint16_t *out = buzz_utility::u64_cvt_u16(payload_out_ptr[0]);
   for (int i = 0; i < out[0]; i++)
   {
     payload_out.payload64.push_back(payload_out_ptr[i]);
@@ -516,27 +516,27 @@ with size.........  |   /
   //  Check for updater message if present send
   if (is_msg_present())
   {
-    uint8_t* buff_send = 0;
-    uint16_t updater_msgSize = *(uint16_t*)(getupdate_out_msg_size());
+    uint8_t *buff_send = 0;
+    uint16_t updater_msgSize = *(uint16_t *)(getupdate_out_msg_size());
     ;
     int tot = 0;
     mavros_msgs::Mavlink update_packets;
     fprintf(stdout, "Appending code into message ...\n");
     fprintf(stdout, "Sent Update packet Size: %u \n", updater_msgSize);
     // allocate mem and clear it
-    buff_send = (uint8_t*)malloc(sizeof(uint16_t) + updater_msgSize);
+    buff_send = (uint8_t *)malloc(sizeof(uint16_t) + updater_msgSize);
     memset(buff_send, 0, sizeof(uint16_t) + updater_msgSize);
     // Append updater msg size
-    *(uint16_t*)(buff_send + tot) = updater_msgSize;
+    *(uint16_t *)(buff_send + tot) = updater_msgSize;
     tot += sizeof(uint16_t);
     // Append updater msgs
-    memcpy(buff_send + tot, (uint8_t*)(getupdater_out_msg()), updater_msgSize);
+    memcpy(buff_send + tot, (uint8_t *)(getupdater_out_msg()), updater_msgSize);
     tot += updater_msgSize;
     // Destroy the updater out msg queue
     destroy_out_msg_queue();
     uint16_t total_size = (ceil((float)(float)tot / (float)sizeof(uint64_t)));
-    uint64_t* payload_64 = new uint64_t[total_size];
-    memcpy((void*)payload_64, (void*)buff_send, total_size * sizeof(uint64_t));
+    uint64_t *payload_64 = new uint64_t[total_size];
+    memcpy((void *)payload_64, (void *)buff_send, total_size * sizeof(uint64_t));
     free(buff_send);
     // Send a constant number to differenciate updater msgs
     update_packets.payload64.push_back((uint64_t)UPDATER_MESSAGE_CONSTANT);
@@ -563,134 +563,134 @@ script
 /-------------------------------------------------------------------------------*/
 {
   //  flight controller client call if requested from Buzz
-  double* goto_pos;
-  float* gimbal;
+  double *goto_pos;
+  float *gimbal;
   switch (buzzuav_closures::bzz_cmd())
   {
-    case buzzuav_closures::COMMAND_TAKEOFF:
-      goto_pos = buzzuav_closures::getgoto();
-      cmd_srv.request.param7 = goto_pos[2];
-      cmd_srv.request.command = buzzuav_closures::getcmd();
-      if (!armstate)
-      {
-        SetMode("LOITER", 0);
-        armstate = 1;
-        Arm();
-        ros::Duration(0.5).sleep();
-        // Registering HOME POINT.
-        home = cur_pos;
-      }
-      if (current_mode != "GUIDED")
-        SetMode("GUIDED", 2000);  // added for compatibility with 3DR Solo
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from flight controller");
-      break;
+  case buzzuav_closures::COMMAND_TAKEOFF:
+    goto_pos = buzzuav_closures::getgoto();
+    cmd_srv.request.param7 = goto_pos[2];
+    cmd_srv.request.command = buzzuav_closures::getcmd();
+    if (!armstate)
+    {
+      SetMode("LOITER", 0);
+      armstate = 1;
+      Arm();
+      ros::Duration(0.5).sleep();
+      // Registering HOME POINT.
+      home = cur_pos;
+    }
+    if (current_mode != "GUIDED")
+      SetMode("GUIDED", 2000); // added for compatibility with 3DR Solo
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from flight controller");
+    break;
 
-    case buzzuav_closures::COMMAND_LAND:
-      cmd_srv.request.command = buzzuav_closures::getcmd();
-      if (current_mode != "LAND")
-      {
-        SetMode("LAND", 0);
-        armstate = 0;
-        Arm();
-      }
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-      {
-        ROS_ERROR("Failed to call service from flight controller");
-      }
+  case buzzuav_closures::COMMAND_LAND:
+    cmd_srv.request.command = buzzuav_closures::getcmd();
+    if (current_mode != "LAND")
+    {
+      SetMode("LAND", 0);
       armstate = 0;
-      break;
+      Arm();
+    }
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+    {
+      ROS_ERROR("Failed to call service from flight controller");
+    }
+    armstate = 0;
+    break;
 
-    case buzzuav_closures::COMMAND_GOHOME:  // TODO: NOT FULLY IMPLEMENTED/TESTED !!!
-      cmd_srv.request.param5 = home.latitude;
-      cmd_srv.request.param6 = home.longitude;
-      cmd_srv.request.param7 = home.altitude;
-      cmd_srv.request.command = buzzuav_closures::getcmd();
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from flight controller");
-      break;
+  case buzzuav_closures::COMMAND_GOHOME: // TODO: NOT FULLY IMPLEMENTED/TESTED !!!
+    cmd_srv.request.param5 = home.latitude;
+    cmd_srv.request.param6 = home.longitude;
+    cmd_srv.request.param7 = home.altitude;
+    cmd_srv.request.command = buzzuav_closures::getcmd();
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from flight controller");
+    break;
 
-    case buzzuav_closures::COMMAND_GOTO:  // TOOD: NOT FULLY IMPLEMENTED/TESTED !!!
-      goto_pos = buzzuav_closures::getgoto();
-      cmd_srv.request.param5 = goto_pos[0];
-      cmd_srv.request.param6 = goto_pos[1];
-      cmd_srv.request.param7 = goto_pos[2];
-      cmd_srv.request.command = buzzuav_closures::getcmd();
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from flight controller");
-      cmd_srv.request.command = mavros_msgs::CommandCode::CMD_MISSION_START;
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from flight controller");
-      break;
+  case buzzuav_closures::COMMAND_GOTO: // TOOD: NOT FULLY IMPLEMENTED/TESTED !!!
+    goto_pos = buzzuav_closures::getgoto();
+    cmd_srv.request.param5 = goto_pos[0];
+    cmd_srv.request.param6 = goto_pos[1];
+    cmd_srv.request.param7 = goto_pos[2];
+    cmd_srv.request.command = buzzuav_closures::getcmd();
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from flight controller");
+    cmd_srv.request.command = mavros_msgs::CommandCode::MISSION_START; //CMD_MISSION_START;
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from flight controller");
+    break;
 
-    case buzzuav_closures::COMMAND_ARM:
-      if (!armstate)
-      {
-        SetMode("LOITER", 0);
-        armstate = 1;
-        Arm();
-      }
-      break;
+  case buzzuav_closures::COMMAND_ARM:
+    if (!armstate)
+    {
+      SetMode("LOITER", 0);
+      armstate = 1;
+      Arm();
+    }
+    break;
 
-    case buzzuav_closures::COMMAND_DISARM:
-      if (armstate)
-      {
-        armstate = 0;
-        SetMode("LOITER", 0);
-        Arm();
-      }
-      break;
+  case buzzuav_closures::COMMAND_DISARM:
+    if (armstate)
+    {
+      armstate = 0;
+      SetMode("LOITER", 0);
+      Arm();
+    }
+    break;
 
-    case buzzuav_closures::COMMAND_MOVETO:
-      goto_pos = buzzuav_closures::getgoto();
-      roscontroller::SetLocalPosition(goto_pos[0], goto_pos[1], goto_pos[2], 0);
-      break;
+  case buzzuav_closures::COMMAND_MOVETO:
+    goto_pos = buzzuav_closures::getgoto();
+    roscontroller::SetLocalPosition(goto_pos[0], goto_pos[1], goto_pos[2], 0);
+    break;
 
-    case buzzuav_closures::COMMAND_GIMBAL:
-      gimbal = buzzuav_closures::getgimbal();
-      cmd_srv.request.param1 = gimbal[0];
-      cmd_srv.request.param2 = gimbal[1];
-      cmd_srv.request.param3 = gimbal[2];
-      cmd_srv.request.param4 = gimbal[3];
-      cmd_srv.request.command = mavros_msgs::CommandCode::CMD_DO_MOUNT_CONTROL;
-      if (mav_client.call(cmd_srv))
-      {
-        ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from flight controller");
-      break;
+  case buzzuav_closures::COMMAND_GIMBAL:
+    gimbal = buzzuav_closures::getgimbal();
+    cmd_srv.request.param1 = gimbal[0];
+    cmd_srv.request.param2 = gimbal[1];
+    cmd_srv.request.param3 = gimbal[2];
+    cmd_srv.request.param4 = gimbal[3];
+    cmd_srv.request.command = mavros_msgs::CommandCode::DO_MOUNT_CONTROL; //CMD_DO_MOUNT_CONTROL;
+    if (mav_client.call(cmd_srv))
+    {
+      ROS_INFO("Reply: %ld", (long int)cmd_srv.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from flight controller");
+    break;
 
-    case buzzuav_closures::COMMAND_PICTURE:
-      ROS_INFO("TAKING A PICTURE HERE!! --------------");
-      mavros_msgs::CommandBool capture_command;
-      if (capture_srv.call(capture_command))
-      {
-        ROS_INFO("Reply: %ld", (long int)capture_command.response.success);
-      }
-      else
-        ROS_ERROR("Failed to call service from camera streamer");
-      break;
+  case buzzuav_closures::COMMAND_PICTURE:
+    ROS_INFO("TAKING A PICTURE HERE!! --------------");
+    mavros_msgs::CommandBool capture_command;
+    if (capture_srv.call(capture_command))
+    {
+      ROS_INFO("Reply: %ld", (long int)capture_command.response.success);
+    }
+    else
+      ROS_ERROR("Failed to call service from camera streamer");
+    break;
   }
 }
 
@@ -768,7 +768,7 @@ void roscontroller::gps_rb(GPS nei_pos, double out[])
   out[2] = 0.0;
 }
 
-void roscontroller::gps_ned_cur(float& ned_x, float& ned_y, GPS t)
+void roscontroller::gps_ned_cur(float &ned_x, float &ned_y, GPS t)
 /*
 / Get GPS from NED and a reference GPS point (struct input)
 ----------------------------------------------------------- */
@@ -776,7 +776,7 @@ void roscontroller::gps_ned_cur(float& ned_x, float& ned_y, GPS t)
   gps_convert_ned(ned_x, ned_y, t.longitude, t.latitude, cur_pos.longitude, cur_pos.latitude);
 }
 
-void roscontroller::gps_convert_ned(float& ned_x, float& ned_y, double gps_t_lon, double gps_t_lat, double gps_r_lon,
+void roscontroller::gps_convert_ned(float &ned_x, float &ned_y, double gps_t_lon, double gps_t_lat, double gps_r_lon,
                                     double gps_r_lat)
 /*
 / Get GPS from NED and a reference GPS point
@@ -788,7 +788,7 @@ void roscontroller::gps_convert_ned(float& ned_x, float& ned_y, double gps_t_lon
   ned_y = DEG2RAD(d_lon) * EARTH_RADIUS * cos(DEG2RAD(gps_t_lat));
 };
 
-void roscontroller::battery(const mavros_msgs::BatteryStatus::ConstPtr& msg)
+void roscontroller::battery(const mavros_msgs::BatteryStatus::ConstPtr &msg)
 /*
 / Update battery status into BVM from subscriber
 /------------------------------------------------------*/
@@ -799,7 +799,7 @@ void roscontroller::battery(const mavros_msgs::BatteryStatus::ConstPtr& msg)
   // msg->current, msg ->remaining);
 }
 
-void roscontroller::flight_status_update(const mavros_msgs::State::ConstPtr& msg)
+void roscontroller::flight_status_update(const mavros_msgs::State::ConstPtr &msg)
 /*
 /Update flight extended status into BVM from subscriber for solos
 /---------------------------------------------------------------------*/
@@ -811,10 +811,10 @@ void roscontroller::flight_status_update(const mavros_msgs::State::ConstPtr& msg
   else if (msg->mode == "LAND")
     buzzuav_closures::flight_status_update(1);
   else
-    buzzuav_closures::flight_status_update(7);  // default to fit mavros::extended_state
+    buzzuav_closures::flight_status_update(7); // default to fit mavros::extended_state
 }
 
-void roscontroller::flight_extended_status_update(const mavros_msgs::ExtendedState::ConstPtr& msg)
+void roscontroller::flight_extended_status_update(const mavros_msgs::ExtendedState::ConstPtr &msg)
 /*
 /Update flight extended status into BVM from subscriber
 ------------------------------------------------------------*/
@@ -822,7 +822,7 @@ void roscontroller::flight_extended_status_update(const mavros_msgs::ExtendedSta
   buzzuav_closures::flight_status_update(msg->landed_state);
 }
 
-void roscontroller::current_pos(const sensor_msgs::NavSatFix::ConstPtr& msg)
+void roscontroller::current_pos(const sensor_msgs::NavSatFix::ConstPtr &msg)
 /*
 / Update current GPS position into BVM from subscriber
 /-------------------------------------------------------------*/
@@ -830,11 +830,11 @@ void roscontroller::current_pos(const sensor_msgs::NavSatFix::ConstPtr& msg)
   //  DEBUG
   // ROS_INFO("Altitude out: %f", cur_rel_altitude);
   fcu_timeout = TIMEOUT;
-  set_cur_pos(msg->latitude, msg->longitude, cur_rel_altitude);                       // msg->altitude);
-  buzzuav_closures::set_currentpos(msg->latitude, msg->longitude, cur_rel_altitude);  // msg->altitude);
+  set_cur_pos(msg->latitude, msg->longitude, cur_rel_altitude);                      // msg->altitude);
+  buzzuav_closures::set_currentpos(msg->latitude, msg->longitude, cur_rel_altitude); // msg->altitude);
 }
 
-void roscontroller::local_pos_callback(const geometry_msgs::PoseStamped::ConstPtr& pose)
+void roscontroller::local_pos_callback(const geometry_msgs::PoseStamped::ConstPtr &pose)
 /*
 / Update current position for flight controller NED offset
 /-------------------------------------------------------------*/
@@ -844,7 +844,7 @@ void roscontroller::local_pos_callback(const geometry_msgs::PoseStamped::ConstPt
   local_pos_new[2] = pose->pose.position.z;
 }
 
-void roscontroller::current_rel_alt(const std_msgs::Float64::ConstPtr& msg)
+void roscontroller::current_rel_alt(const std_msgs::Float64::ConstPtr &msg)
 /*
 / Update altitude into BVM from subscriber
 /-------------------------------------------------------------*/
@@ -854,7 +854,7 @@ void roscontroller::current_rel_alt(const std_msgs::Float64::ConstPtr& msg)
   cur_rel_altitude = (double)msg->data;
 }
 
-void roscontroller::obstacle_dist(const sensor_msgs::LaserScan::ConstPtr& msg)
+void roscontroller::obstacle_dist(const sensor_msgs::LaserScan::ConstPtr &msg)
 /*
 /Set obstacle Obstacle distance table into BVM from subscriber
 /-------------------------------------------------------------*/
@@ -912,7 +912,7 @@ void roscontroller::SetMode(std::string mode, int delay_miliseconds)
   current_mode = mode;
   if (mode_client.call(set_mode_message))
   {
-    ;  // DEBUG
+    ; // DEBUG
     // ROS_INFO("Set Mode Service call successful!");
   }
   else
@@ -940,14 +940,13 @@ void roscontroller::SetStreamRate(int id, int rate, int on_off)
   // ROS_INFO("Set stream rate call successful");
 }
 
-void roscontroller::payload_obt(const mavros_msgs::Mavlink::ConstPtr& msg)
+void roscontroller::payload_obt(const mavros_msgs::Mavlink::ConstPtr &msg)
 /*
 /Push payload into BVM FIFO
 /----------------------------------------------------------------------------------------
 / Message format of payload (Each slot is uint64_t)
 / _________________________________________________________________________________________________
-/|	|     |	    |						     |
- * |
+/|	|     |	    |						     |                                                                 |
 /|Pos x|Pos y|Pos z|Size in Uint64_t|robot_id|Buzz_msg_size|Buzz_msg|Buzz_msgs
  * with size.........  |
 /|_____|_____|_____|________________________________________________|______________________________|
@@ -965,15 +964,15 @@ void roscontroller::payload_obt(const mavros_msgs::Mavlink::ConstPtr& msg)
       message_obt[i] = (uint64_t)msg->payload64[i];
     }
 
-    uint8_t* pl = (uint8_t*)malloc(obt_msg_size);
+    uint8_t *pl = (uint8_t *)malloc(obt_msg_size);
     memset(pl, 0, obt_msg_size);
     //  Copy packet into temporary buffer neglecting update constant
-    memcpy((void*)pl, (void*)(message_obt + 1), obt_msg_size);
-    uint16_t unMsgSize = *(uint16_t*)(pl);
+    memcpy((void *)pl, (void *)(message_obt + 1), obt_msg_size);
+    uint16_t unMsgSize = *(uint16_t *)(pl);
     fprintf(stdout, "Update packet received, read msg size : %u \n", unMsgSize);
     if (unMsgSize > 0)
     {
-      code_message_inqueue_append((uint8_t*)(pl + sizeof(uint16_t)), unMsgSize);
+      code_message_inqueue_append((uint8_t *)(pl + sizeof(uint16_t)), unMsgSize);
       code_message_inqueue_process();
     }
     free(pl);
@@ -999,7 +998,7 @@ void roscontroller::payload_obt(const mavros_msgs::Mavlink::ConstPtr& msg)
     double cvt_neighbours_pos_payload[3];
     gps_rb(nei_pos, cvt_neighbours_pos_payload);
     //  Extract robot id of the neighbour
-    uint16_t* out = buzz_utility::u64_cvt_u16((uint64_t) * (message_obt + 3));
+    uint16_t *out = buzz_utility::u64_cvt_u16((uint64_t) * (message_obt + 3));
     if (debug)
       ROS_WARN("RAB of %i: %f, %f", (int)out[1], cvt_neighbours_pos_payload[0], cvt_neighbours_pos_payload[1]);
     //  Pass neighbour position to local maintaner
@@ -1015,7 +1014,7 @@ void roscontroller::payload_obt(const mavros_msgs::Mavlink::ConstPtr& msg)
   }
 }
 
-bool roscontroller::rc_callback(mavros_msgs::CommandLong::Request& req, mavros_msgs::CommandLong::Response& res)
+bool roscontroller::rc_callback(mavros_msgs::CommandLong::Request &req, mavros_msgs::CommandLong::Response &res)
 /*
 / Catch the ROS service call from a custom remote controller (Mission Planner)
 / and send the requested commands to Buzz
@@ -1024,64 +1023,64 @@ bool roscontroller::rc_callback(mavros_msgs::CommandLong::Request& req, mavros_m
   int rc_cmd;
   switch (req.command)
   {
-    case mavros_msgs::CommandCode::NAV_TAKEOFF:
-      ROS_INFO("RC_call: TAKE OFF!!!!");
-      rc_cmd = mavros_msgs::CommandCode::NAV_TAKEOFF;
+  case mavros_msgs::CommandCode::NAV_TAKEOFF:
+    ROS_INFO("RC_call: TAKE OFF!!!!");
+    rc_cmd = mavros_msgs::CommandCode::NAV_TAKEOFF;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  case mavros_msgs::CommandCode::NAV_LAND:
+    ROS_INFO("RC_Call: LAND!!!!");
+    rc_cmd = mavros_msgs::CommandCode::NAV_LAND;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  case mavros_msgs::CommandCode::COMPONENT_ARM_DISARM:
+    rc_cmd = mavros_msgs::CommandCode::COMPONENT_ARM_DISARM;
+    armstate = req.param1;
+    if (armstate)
+    {
+      ROS_INFO("RC_Call: ARM!!!!");
       buzzuav_closures::rc_call(rc_cmd);
       res.success = true;
-      break;
-    case mavros_msgs::CommandCode::NAV_LAND:
-      ROS_INFO("RC_Call: LAND!!!!");
-      rc_cmd = mavros_msgs::CommandCode::NAV_LAND;
-      buzzuav_closures::rc_call(rc_cmd);
+    }
+    else
+    {
+      ROS_INFO("RC_Call: DISARM!!!!");
+      buzzuav_closures::rc_call(rc_cmd + 1);
       res.success = true;
-      break;
-    case mavros_msgs::CommandCode::CMD_COMPONENT_ARM_DISARM:
-      rc_cmd = mavros_msgs::CommandCode::CMD_COMPONENT_ARM_DISARM;
-      armstate = req.param1;
-      if (armstate)
-      {
-        ROS_INFO("RC_Call: ARM!!!!");
-        buzzuav_closures::rc_call(rc_cmd);
-        res.success = true;
-      }
-      else
-      {
-        ROS_INFO("RC_Call: DISARM!!!!");
-        buzzuav_closures::rc_call(rc_cmd + 1);
-        res.success = true;
-      }
-      break;
-    case mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH:
-      ROS_INFO("RC_Call: GO HOME!!!!");
-      rc_cmd = mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH;
-      buzzuav_closures::rc_call(rc_cmd);
-      res.success = true;
-      break;
-    case mavros_msgs::CommandCode::NAV_WAYPOINT:
-      ROS_INFO("RC_Call: GO TO!!!! ");
-      buzzuav_closures::rc_set_goto(req.param1, req.param5, req.param6, req.param7);
-      rc_cmd = mavros_msgs::CommandCode::NAV_WAYPOINT;
-      buzzuav_closures::rc_call(rc_cmd);
-      res.success = true;
-      break;
-    case mavros_msgs::CommandCode::CMD_DO_MOUNT_CONTROL:
-      ROS_INFO("RC_Call: Gimbal!!!! ");
-      buzzuav_closures::rc_set_gimbal(req.param1, req.param2, req.param3, req.param4, req.param5);
-      rc_cmd = mavros_msgs::CommandCode::CMD_DO_MOUNT_CONTROL;
-      buzzuav_closures::rc_call(rc_cmd);
-      res.success = true;
-      break;
-    case CMD_REQUEST_UPDATE:
-      rc_cmd = CMD_REQUEST_UPDATE;
-      buzzuav_closures::rc_call(rc_cmd);
-      res.success = true;
-      break;
-    default:
-      buzzuav_closures::rc_call(req.command);
-      ROS_INFO("----> Received unregistered command: ", req.command);
-      res.success = true;
-      break;
+    }
+    break;
+  case mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH:
+    ROS_INFO("RC_Call: GO HOME!!!!");
+    rc_cmd = mavros_msgs::CommandCode::NAV_RETURN_TO_LAUNCH;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  case mavros_msgs::CommandCode::NAV_WAYPOINT:
+    ROS_INFO("RC_Call: GO TO!!!! ");
+    buzzuav_closures::rc_set_goto(req.param1, req.param5, req.param6, req.param7);
+    rc_cmd = mavros_msgs::CommandCode::NAV_WAYPOINT;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  case mavros_msgs::CommandCode::DO_MOUNT_CONTROL:
+    ROS_INFO("RC_Call: Gimbal!!!! ");
+    buzzuav_closures::rc_set_gimbal(req.param1, req.param2, req.param3, req.param4, req.param5);
+    rc_cmd = mavros_msgs::CommandCode::DO_MOUNT_CONTROL;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  case CMD_REQUEST_UPDATE:
+    rc_cmd = CMD_REQUEST_UPDATE;
+    buzzuav_closures::rc_call(rc_cmd);
+    res.success = true;
+    break;
+  default:
+    buzzuav_closures::rc_call(req.command);
+    ROS_INFO("----> Received unregistered command: ", req.command);
+    res.success = true;
+    break;
   }
   return true;
 }
@@ -1122,7 +1121,7 @@ void roscontroller::get_number_of_robots()
 /*
 / Set of functions to grab network quality data from Zbee service
 --------------------------------------------------------------------------*/
-bool roscontroller::GetDequeFull(bool& result)
+bool roscontroller::GetDequeFull(bool &result)
 {
   mavros_msgs::ParamGet::Request srv_request;
   srv_request.param_id = "deque_full";
@@ -1137,7 +1136,7 @@ bool roscontroller::GetDequeFull(bool& result)
   return srv_response.success;
 }
 
-bool roscontroller::GetRssi(float& result)
+bool roscontroller::GetRssi(float &result)
 {
   mavros_msgs::ParamGet::Request srv_request;
   srv_request.param_id = "rssi";
@@ -1172,7 +1171,7 @@ bool roscontroller::TriggerAPIRssi(const uint8_t short_id)
   return srv_response.success;
 }
 
-bool roscontroller::GetAPIRssi(const uint8_t short_id, float& result)
+bool roscontroller::GetAPIRssi(const uint8_t short_id, float &result)
 {
   mavros_msgs::ParamGet::Request srv_request;
   if (short_id == 0xFF)
@@ -1193,7 +1192,7 @@ bool roscontroller::GetAPIRssi(const uint8_t short_id, float& result)
   return srv_response.success;
 }
 
-bool roscontroller::GetRawPacketLoss(const uint8_t short_id, float& result)
+bool roscontroller::GetRawPacketLoss(const uint8_t short_id, float &result)
 {
   mavros_msgs::ParamGet::Request srv_request;
   if (short_id == 0xFF)
@@ -1214,7 +1213,7 @@ bool roscontroller::GetRawPacketLoss(const uint8_t short_id, float& result)
   return srv_response.success;
 }
 
-bool roscontroller::GetFilteredPacketLoss(const uint8_t short_id, float& result)
+bool roscontroller::GetFilteredPacketLoss(const uint8_t short_id, float &result)
 {
   mavros_msgs::ParamGet::Request srv_request;
   if (short_id == 0xFF)
@@ -1268,4 +1267,4 @@ void roscontroller::get_xbee_status()
    * TriggerAPIRssi(all_ids);
    */
 }
-}
+} // namespace rosbzz_node

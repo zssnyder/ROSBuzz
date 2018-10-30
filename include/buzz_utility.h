@@ -25,7 +25,7 @@ struct pos_struct
 typedef struct pos_struct Pos_struct;
 struct rb_struct
 {
-  double r, b, latitude, longitude, altitude;
+  double latitude, longitude, altitude, r, b;
   rb_struct(double la, double lo, double al, double r, double b)
     : latitude(la), longitude(lo), altitude(al), r(r), b(b){};
   rb_struct()

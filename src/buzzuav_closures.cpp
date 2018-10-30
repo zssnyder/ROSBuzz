@@ -167,7 +167,7 @@ void parse_gpslist()
     wplist_map.insert(make_pair(tid, RB_arr));
   }
 
-  ROS_INFO("----->Saved %i waypoints.", wplist_map.size());
+  ROS_INFO("----->Saved %lu waypoints.", wplist_map.size());
 
   // Close the file:
   fin.close();
@@ -187,7 +187,7 @@ int buzz_exportmap(buzzvm_t vm)
   buzzobj_t t = buzzvm_stack_at(vm, 1);
   /* Copy the values into a vector */
   std::vector<float> mat;
-  for (int32_t i = 0; i < buzzdict_size(t->t.value); ++i)
+  for (uint32_t i = 0; i < buzzdict_size(t->t.value); ++i)
   {
     /* Duplicate the table */
     buzzvm_dup(vm);
@@ -394,7 +394,7 @@ int buzzuav_arm(buzzvm_t vm)
 / Buzz closure to arm
 /---------------------------------------*/
 {
-  cur_cmd = mavros_msgs::CommandCode::CMD_COMPONENT_ARM_DISARM;
+  cur_cmd = mavros_msgs::CommandCode::COMPONENT_ARM_DISARM;
   printf(" Buzz requested Arm \n");
   buzz_cmd = COMMAND_ARM;
   return buzzvm_ret0(vm);
@@ -405,7 +405,7 @@ int buzzuav_disarm(buzzvm_t vm)
 / Buzz closure to disarm
 /---------------------------------------*/
 {
-  cur_cmd = mavros_msgs::CommandCode::CMD_COMPONENT_ARM_DISARM + 1;
+  cur_cmd = mavros_msgs::CommandCode::COMPONENT_ARM_DISARM + 1;
   printf(" Buzz requested Disarm  \n");
   buzz_cmd = COMMAND_DISARM;
   return buzzvm_ret0(vm);
